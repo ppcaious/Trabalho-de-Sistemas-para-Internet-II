@@ -1,0 +1,68 @@
+services:
+  # ------------------------------------------------------------------
+  # db-server: PostgreSQL 16 com pg_trgm (busca por similaridade).
+  # Na primeira subida, os scripts de db/init criam o schema, importam
+  # os arquivos de db/data e criam os índices.
+  # ------------------------------------------------------------------
+  db:
+    build: ./db
+    container_name: servidores-db
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: servidores
+      # statement_timeout padrão do banco (ms). A API também define o seu.
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C.UTF-8"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./db/data:/dados:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      # Durante a importação inicial o Postgres só escuta no socket Unix,
+      # então o check via TCP (-h localhost) só passa quando tudo terminou.
+      test: ["CMD-SHELL", "pg_isready -U app -d servidores -h localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 180
+      start_period: 15s
+    restart: unless-stopped
+
+  # ------------------------------------------------------------------
+  # backend: API Flask servida pelo Gunicorn (WSGI, multi-worker/thread)
+  # ------------------------------------------------------------------
+  backend:
+    build: ./backend
+    container_name: servidores-backend
+    environment:
+      DATABASE_URL: postgresql://app:app@db:5432/servidores
+      WEB_CONCURRENCY: "4"
+      GUNICORN_THREADS: "8"
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/health', timeout=3).status==200 else 1)\""]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  # ------------------------------------------------------------------
+  # frontend: página web estática (HTML/CSS/JS) servida pelo Nginx, que
+  # também faz proxy de /api para o backend (evita CORS).
+  # ------------------------------------------------------------------
+  frontend:
+    build: ./frontend
+    container_name: servidores-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  db_data:
