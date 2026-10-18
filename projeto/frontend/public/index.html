@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Servidores do Executivo Federal</title>
+  <meta name="description" content="Consulta de servidores ativos e aposentados do Poder Executivo Federal">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topo">
+    <div class="container topo__conteudo">
+      <div class="marca">
+        <span class="marca__icone" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        </span>
+        <div>
+          <h1>Servidores do Executivo Federal</h1>
+          <p>Consulta a servidores ativos e aposentados · dados.gov.br</p>
+        </div>
+      </div>
+      <div class="estado" id="estado-api" title="Status da API">
+        <span class="estado__ponto"></span>
+        <span class="estado__texto">conectando…</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="cartao busca">
+      <h2>Buscar</h2>
+      <p class="dica">Em breve: busca por nome, cargo, UF e órgão consumindo a API Flask em <code>/api/servidores</code>.</p>
+    </section>
+  </main>
+
+  <footer class="rodape container">
+    <span>Trabalho 3º Bimestre · Sistemas para Internet II · Flask + Gunicorn · PostgreSQL · Docker</span>
+    <a href="/api" target="_blank" rel="noopener">Documentação da API</a>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
