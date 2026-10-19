@@ -1,0 +1,85 @@
+/* ==========================================================================
+   Servidores do Executivo Federal - estilos
+   Tema claro/escuro automático, layout responsivo, sem framework.
+   ========================================================================== */
+:root {
+  --fundo: #f3f5f9;
+  --superficie: #ffffff;
+  --superficie-2: #f7f9fc;
+  --borda: #dfe4ec;
+  --texto: #15202b;
+  --texto-2: #5b6b7f;
+  --primaria: #1a56db;
+  --primaria-escura: #1546b0;
+  --primaria-suave: #e7eefc;
+  --sombra: 0 1px 2px rgba(16, 24, 40, .06), 0 1px 3px rgba(16, 24, 40, .1);
+  --raio: 12px;
+  --fonte: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fundo: #0f1419;
+    --superficie: #171d25;
+    --superficie-2: #1d242e;
+    --borda: #2b3440;
+    --texto: #e6edf3;
+    --texto-2: #9aa8b8;
+    --primaria: #4f8cff;
+    --primaria-escura: #3b76e6;
+    --primaria-suave: #1b2a44;
+    --sombra: 0 1px 2px rgba(0, 0, 0, .4);
+  }
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: var(--fonte);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--texto);
+  background: var(--fundo);
+}
+h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -.01em; }
+h1 { font-size: 1.15rem; }
+h2 { font-size: 1.05rem; }
+code { background: var(--superficie-2); border: 1px solid var(--borda); border-radius: 4px; padding: 0 4px; font-size: .9em; }
+a { color: var(--primaria); }
+
+.container { max-width: 1180px; margin: 0 auto; padding: 0 16px; }
+
+/* --- topo ---------------------------------------------------------------- */
+.topo {
+  background: linear-gradient(135deg, #0b1f4d 0%, #1a56db 100%);
+  color: #fff;
+  padding: 20px 0;
+  margin-bottom: 24px;
+}
+.topo__conteudo { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.marca { display: flex; align-items: center; gap: 14px; }
+.marca p { margin: 2px 0 0; font-size: .85rem; opacity: .85; }
+.marca__icone {
+  display: grid; place-items: center; width: 46px; height: 46px;
+  border-radius: 12px; background: rgba(255, 255, 255, .15);
+}
+.estado {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 12px; border-radius: 999px; font-size: .8rem;
+  background: rgba(255, 255, 255, .12);
+}
+.estado__ponto { width: 9px; height: 9px; border-radius: 50%; background: #fbbf24; box-shadow: 0 0 0 3px rgba(251, 191, 36, .25); }
+.estado--ok .estado__ponto { background: #34d399; box-shadow: 0 0 0 3px rgba(52, 211, 153, .25); }
+.estado--erro .estado__ponto { background: #f87171; box-shadow: 0 0 0 3px rgba(248, 113, 113, .25); }
+
+/* --- cartões ------------------------------------------------------------- */
+.cartao {
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+}
+.busca { padding: 20px; margin-bottom: 20px; }
+.dica { color: var(--texto-2); font-size: .9rem; margin: 8px 0 0; }
+
+/* --- rodapé -------------------------------------------------------------- */
+.rodape { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 24px 16px 40px; color: var(--texto-2); font-size: .8rem; }
