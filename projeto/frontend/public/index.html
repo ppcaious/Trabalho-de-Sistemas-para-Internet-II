@@ -29,9 +29,92 @@
   </header>
 
   <main class="container">
-    <section class="cartao busca">
-      <h2>Buscar</h2>
-      <p class="dica">Em breve: busca por nome, cargo, UF e órgão consumindo a API Flask em <code>/api/servidores</code>.</p>
+    <section class="cartao busca" aria-labelledby="titulo-busca">
+      <div class="busca__cabecalho">
+        <h2 id="titulo-busca">Buscar</h2>
+      </div>
+
+      <form id="form-busca" novalidate>
+        <div class="grade">
+          <label class="campo campo--largo" id="campo-nome">
+            <span>Nome completo</span>
+            <input type="text" name="nome" id="nome" placeholder="Ex.: MARIA DA SILVA" maxlength="80" autocomplete="off">
+            <small>Busca exata, sem diferenciar acentos ou maiúsculas.</small>
+          </label>
+
+          <label class="campo">
+            <span>Cargo / profissão</span>
+            <input type="text" name="cargo" id="cargo" list="lista-cargos" placeholder="Ex.: AUDITOR" maxlength="80" autocomplete="off">
+            <datalist id="lista-cargos"></datalist>
+          </label>
+
+          <label class="campo campo--curto">
+            <span>Estado (UF)</span>
+            <select name="uf" id="uf">
+              <option value="">Todos</option>
+            </select>
+          </label>
+
+          <label class="campo">
+            <span>Instituição / órgão</span>
+            <input type="text" name="orgao" id="orgao" list="lista-orgaos" placeholder="Ex.: UNIVERSIDADE" maxlength="80" autocomplete="off">
+            <datalist id="lista-orgaos"></datalist>
+          </label>
+
+          <label class="campo campo--curto">
+            <span>Situação</span>
+            <select name="situacao" id="situacao">
+              <option value="">Todas</option>
+              <option value="ATIVO">Ativo</option>
+              <option value="APOSENTADO">Aposentado</option>
+            </select>
+          </label>
+
+          <label class="campo campo--curto">
+            <span>Por página</span>
+            <select name="per_page" id="per_page">
+              <option value="10">10</option>
+              <option value="20" selected>20</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="acoes">
+          <button type="submit" class="botao botao--primario" id="btn-buscar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+            Buscar
+          </button>
+          <button type="button" class="botao" id="btn-limpar">Limpar</button>
+          <span class="dica">Combine filtros: cargo + UF, órgão + UF, nome + cargo…</span>
+        </div>
+      </form>
+    </section>
+
+    <div id="mensagem" class="mensagem oculto" role="alert"></div>
+
+    <section id="resultado" class="oculto" aria-live="polite">
+      <div class="resultado__cabecalho">
+        <h2 id="resultado-titulo">Resultados</h2>
+        <span class="chip" id="resultado-resumo"></span>
+      </div>
+
+      <div id="lista" class="cartao tabela-wrap">
+        <table class="tabela">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Cargo</th>
+              <th>Órgão</th>
+              <th class="centro">UF</th>
+              <th class="centro">Situação</th>
+              <th class="direita">Valor (R$)</th>
+            </tr>
+          </thead>
+          <tbody id="tabela-corpo"></tbody>
+        </table>
+      </div>
     </section>
   </main>
 
