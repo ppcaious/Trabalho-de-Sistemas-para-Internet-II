@@ -32,6 +32,10 @@
     <section class="cartao busca" aria-labelledby="titulo-busca">
       <div class="busca__cabecalho">
         <h2 id="titulo-busca">Buscar</h2>
+        <div class="abas" role="tablist">
+          <button type="button" class="aba aba--ativa" data-modo="exata" role="tab" aria-selected="true">Nome exato</button>
+          <button type="button" class="aba" data-modo="similar" role="tab" aria-selected="false">Nome similar</button>
+        </div>
       </div>
 
       <form id="form-busca" novalidate>
@@ -40,6 +44,18 @@
             <span>Nome completo</span>
             <input type="text" name="nome" id="nome" placeholder="Ex.: MARIA DA SILVA" maxlength="80" autocomplete="off">
             <small>Busca exata, sem diferenciar acentos ou maiúsculas.</small>
+          </label>
+
+          <label class="campo campo--largo oculto" id="campo-similar">
+            <span>Nome parecido</span>
+            <input type="text" name="similar" id="similar" placeholder="Ex.: %MARIA%SILVA%" maxlength="80" autocomplete="off">
+            <small>Use <code>%</code> como curinga: <code>MARIA%SILVA</code>, <code>%SILVA</code>, <code>JOAO SILVA%</code>.</small>
+          </label>
+
+          <label class="campo campo--curto oculto" id="campo-limit">
+            <span>Limite de nomes</span>
+            <input type="number" name="limit" id="limit" min="1" max="100" value="100">
+            <small>máximo 100</small>
           </label>
 
           <label class="campo">
@@ -100,7 +116,11 @@
         <span class="chip" id="resultado-resumo"></span>
       </div>
 
-      <div id="lista" class="cartao tabela-wrap">
+      <!-- registro único -->
+      <article id="registro-unico" class="cartao detalhe oculto"></article>
+
+      <!-- vários registros -->
+      <div id="lista" class="cartao tabela-wrap oculto">
         <table class="tabela">
           <thead>
             <tr>
@@ -110,13 +130,35 @@
               <th class="centro">UF</th>
               <th class="centro">Situação</th>
               <th class="direita">Valor (R$)</th>
+              <th></th>
             </tr>
           </thead>
           <tbody id="tabela-corpo"></tbody>
         </table>
+        <nav class="paginacao" id="paginacao" aria-label="Paginação">
+          <button type="button" class="botao" id="pg-primeira" title="Primeira página">«</button>
+          <button type="button" class="botao" id="pg-anterior">‹ Anterior</button>
+          <span class="paginacao__info" id="pg-info"></span>
+          <button type="button" class="botao" id="pg-proxima">Próxima ›</button>
+          <button type="button" class="botao" id="pg-ultima" title="Última página">»</button>
+        </nav>
       </div>
     </section>
+
+    <section class="estatisticas" id="estatisticas"></section>
   </main>
+
+  <!-- modal de detalhes -->
+  <div class="modal oculto" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
+    <div class="modal__fundo" data-fechar></div>
+    <div class="modal__caixa cartao">
+      <div class="modal__cabecalho">
+        <h3 id="modal-titulo">Detalhes</h3>
+        <button type="button" class="botao botao--icone" data-fechar aria-label="Fechar">✕</button>
+      </div>
+      <div id="modal-corpo"></div>
+    </div>
+  </div>
 
   <footer class="rodape container">
     <span>Trabalho 3º Bimestre · Sistemas para Internet II · Flask + Gunicorn · PostgreSQL · Docker</span>

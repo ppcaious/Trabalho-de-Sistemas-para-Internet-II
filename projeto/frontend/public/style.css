@@ -1,7 +1,3 @@
-/* ==========================================================================
-   Servidores do Executivo Federal - estilos
-   Tema claro/escuro automático, layout responsivo, sem framework.
-   ========================================================================== */
 :root {
   --fundo: #f3f5f9;
   --superficie: #ffffff;
@@ -59,7 +55,7 @@ a { color: var(--primaria); }
 .centro { text-align: center; }
 .direita { text-align: right; }
 
-/* --- topo ---------------------------------------------------------------- */
+/* topo */
 .topo {
   background: linear-gradient(135deg, #0b1f4d 0%, #1a56db 100%);
   color: #fff;
@@ -82,7 +78,7 @@ a { color: var(--primaria); }
 .estado--ok .estado__ponto { background: #34d399; box-shadow: 0 0 0 3px rgba(52, 211, 153, .25); }
 .estado--erro .estado__ponto { background: #f87171; box-shadow: 0 0 0 3px rgba(248, 113, 113, .25); }
 
-/* --- cartões ------------------------------------------------------------- */
+/* cartões */
 .cartao {
   background: var(--superficie);
   border: 1px solid var(--borda);
@@ -91,6 +87,13 @@ a { color: var(--primaria); }
 }
 .busca { padding: 20px; margin-bottom: 20px; }
 .busca__cabecalho { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+
+.abas { display: inline-flex; background: var(--superficie-2); border: 1px solid var(--borda); border-radius: 999px; padding: 3px; }
+.aba {
+  border: 0; background: transparent; color: var(--texto-2);
+  padding: 6px 14px; border-radius: 999px; font: inherit; font-size: .85rem; font-weight: 500; cursor: pointer;
+}
+.aba--ativa { background: var(--primaria); color: #fff; }
 
 .grade { display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; }
 .campo { display: flex; flex-direction: column; gap: 6px; grid-column: span 4; }
@@ -121,8 +124,14 @@ a { color: var(--primaria); }
 .botao--primario { background: var(--primaria); border-color: var(--primaria); color: #fff; }
 .botao--primario:hover { background: var(--primaria-escura); }
 .botao--icone { padding: 6px 10px; }
+.botao--carregando { position: relative; color: transparent !important; }
+.botao--carregando::after {
+  content: ""; position: absolute; inset: 0; margin: auto; width: 16px; height: 16px;
+  border: 2px solid #fff; border-right-color: transparent; border-radius: 50%; animation: girar .7s linear infinite;
+}
+@keyframes girar { to { transform: rotate(360deg); } }
 
-/* --- mensagens ----------------------------------------------------------- */
+/* mensagens */
 .mensagem {
   display: flex; gap: 12px; align-items: flex-start;
   padding: 14px 16px; border-radius: var(--raio); margin-bottom: 20px;
@@ -135,7 +144,7 @@ a { color: var(--primaria); }
 .mensagem--info { background: var(--primaria-suave); color: var(--primaria); border-color: color-mix(in srgb, var(--primaria) 30%, transparent); }
 @keyframes aparecer { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 
-/* --- resultados ---------------------------------------------------------- */
+/* resultados */
 .resultado__cabecalho { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
 .chip { font-size: .8rem; color: var(--texto-2); background: var(--superficie); border: 1px solid var(--borda); border-radius: 999px; padding: 3px 10px; }
 
@@ -155,11 +164,40 @@ a { color: var(--primaria); }
   .tag--aposentado { background: #312e81; color: #c7d2fe; }
 }
 
-/* --- rodapé -------------------------------------------------------------- */
+.paginacao { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px; background: var(--superficie-2); border-top: 1px solid var(--borda); flex-wrap: wrap; }
+.paginacao__info { font-size: .85rem; color: var(--texto-2); padding: 0 8px; }
+
+/* detalhe (registro único / modal) */
+.detalhe { padding: 22px; }
+.detalhe__topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.detalhe__topo h3 { font-size: 1.2rem; }
+.lista-dados { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px 24px; margin: 0; }
+.lista-dados div { padding: 10px 12px; background: var(--superficie-2); border-radius: 8px; }
+.lista-dados dt { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--texto-2); }
+.lista-dados dd { margin: 2px 0 0; font-weight: 500; word-break: break-word; }
+
+.modal { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px; }
+.modal__fundo { position: absolute; inset: 0; background: rgba(5, 10, 20, .55); backdrop-filter: blur(2px); }
+.modal__caixa { position: relative; width: min(760px, 100%); max-height: 90vh; overflow: auto; padding: 22px; animation: aparecer .15s ease-out; }
+.modal__cabecalho { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+
+/* estatísticas */
+.estatisticas { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 24px 0; }
+.estat { padding: 14px 16px; }
+.estat__valor { font-size: 1.5rem; font-weight: 700; letter-spacing: -.02em; }
+.estat__rotulo { font-size: .75rem; color: var(--texto-2); text-transform: uppercase; letter-spacing: .05em; }
+
+/* rodapé */
 .rodape { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 24px 16px 40px; color: var(--texto-2); font-size: .8rem; }
 
-/* --- responsivo ---------------------------------------------------------- */
+/* responsivo */
 @media (max-width: 900px) {
   .campo, .campo--largo { grid-column: span 6; }
   .campo--curto { grid-column: span 3; }
+}
+@media (max-width: 600px) {
+  .campo, .campo--largo, .campo--curto { grid-column: span 12; }
+  .tabela th:nth-child(3), .tabela td:nth-child(3),
+  .tabela th:nth-child(6), .tabela td:nth-child(6) { display: none; }
+  .dica { display: none; }
 }
