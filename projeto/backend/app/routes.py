@@ -13,9 +13,9 @@ import math
 
 from flask import Blueprint, current_app, jsonify, request
 
-from . import db
+from . import db, limitador
 from .errors import ErroAPI
-from .validators import UFS, validar_busca, validar_texto_simples
+from .validators import UFS, validar_busca, validar_inteiro, validar_texto_simples
 
 bp = Blueprint("api", __name__)
 
@@ -148,6 +148,7 @@ def _verificar_dominio(p: dict):
 
 
 @bp.get("/servidores")
+@limitador.limitar
 def buscar_servidores():
     p = validar_busca(request.args)
     _verificar_dominio(p)
@@ -156,17 +157,19 @@ def buscar_servidores():
     page, per_page = p["page"], p["per_page"]
     params.update({"offset": (page - 1) * per_page, "per_page": per_page, "limit": p["limit"]})
 
+    universo = None
     if "similar" in p:
-        # Universo = os `limit` nomes mais parecidos; a paginação acontece dentro dele.
-        base = f"""
+        # Universo = os `limit` nomes mais parecidos (no máximo MAX_LIMIT linhas).
+        # A consulta com similarity() é a mais cara da API, então roda uma única
+        # vez: traz o universo inteiro e a paginação é feita aqui em memória.
+        universo = db.consultar(f"""
             SELECT {_COLUNAS}, similarity(s.nome, %(similar_txt)s) AS similaridade
             {_FROM}
             WHERE {where}
             ORDER BY similaridade DESC, s.nome, s.id
             LIMIT %(limit)s
-        """
-        total = db.consultar_um(f"SELECT count(*) AS n FROM ({base}) b", params)["n"]
-        sql_itens = f"SELECT * FROM ({base}) b OFFSET %(offset)s LIMIT %(per_page)s"
+        """, params)
+        total = len(universo)
     else:
         total = db.consultar_um(f"SELECT count(*) AS n {_FROM} WHERE {where}", params)["n"]
         sql_itens = f"""
@@ -193,7 +196,11 @@ def buscar_servidores():
         raise ErroAPI(404, f"Página inexistente: {page}. A busca tem {total_paginas} página(s).",
                       {"total": total, "total_paginas": total_paginas, "per_page": per_page})
 
-    itens = [_serializar(l) for l in db.consultar(sql_itens, params)]
+    if universo is not None:
+        linhas = universo[params["offset"]:params["offset"] + per_page]
+    else:
+        linhas = db.consultar(sql_itens, params)
+    itens = [_serializar(l) for l in linhas]
     if "similar" in p:
         for it in itens:
             it["similaridade"] = round(float(it.pop("similaridade", 0) or 0), 3)
@@ -210,6 +217,7 @@ def buscar_servidores():
 
 
 @bp.get("/servidores/<int:id_servidor>")
+@limitador.limitar
 def obter_servidor(id_servidor: int):
     linha = db.consultar_um(f"SELECT {_COLUNAS} {_FROM} WHERE s.id = %(id)s", {"id": id_servidor})
     if not linha:
@@ -220,7 +228,7 @@ def obter_servidor(id_servidor: int):
 # ---------------------------------------------------------------------------
 def _listar_dominio(tabela: str, extra_cols: str = ""):
     q = request.args.get("q")
-    limite = min(int(request.args.get("limit", 20) or 20), 100) if str(request.args.get("limit", "20")).isdigit() else 20
+    limite = validar_inteiro(request.args.get("limit"), "limit", 1, 100, 20)
     if q:
         qn = validar_texto_simples(q, "q")
         linhas = db.consultar(
@@ -234,11 +242,13 @@ def _listar_dominio(tabela: str, extra_cols: str = ""):
 
 
 @bp.get("/cargos")
+@limitador.limitar
 def cargos():
     return _listar_dominio("cargos")
 
 
 @bp.get("/orgaos")
+@limitador.limitar
 def orgaos():
     return _listar_dominio("orgaos", ", sigla")
 
@@ -249,6 +259,7 @@ def ufs():
 
 
 @bp.get("/estatisticas")
+@limitador.limitar
 def estatisticas():
     totais = db.verificar()
     por_uf = db.consultar(

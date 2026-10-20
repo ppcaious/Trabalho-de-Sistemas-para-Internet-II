@@ -1,6 +1,8 @@
 """Validação dos parâmetros de busca.
 
-Tudo que chega pela query string passa por aqui antes de virar SQL.
+Tudo que chega pela query string passa por aqui antes de virar SQL. Mesmo com
+consultas parametrizadas (que já impedem SQL injection), rejeitamos cedo o
+que é claramente inválido para devolver mensagens úteis com HTTP 400.
 """
 import re
 import unicodedata
@@ -25,6 +27,20 @@ PARAMETROS_PERMITIDOS = {
     "nome", "similar", "limit", "cargo", "uf", "orgao", "situacao", "page", "per_page",
 }
 
+# Caracteres aceitos em textos de busca: letras (com acento), dígitos, espaço e
+# pontuação comum em nomes de cargos/órgãos. '%' e '_' só são úteis em ?similar=.
+_RE_TEXTO = re.compile(r"^[A-Za-zÀ-ÖØ-öø-ÿ0-9 .,'/()&-]+$")
+_RE_SIMILAR = re.compile(r"^[A-Za-zÀ-ÖØ-öø-ÿ0-9 .,'/()&%_-]+$")
+
+# Padrões típicos de tentativa de SQL injection. As consultas são
+# parametrizadas, então isso é uma segunda barreira (defesa em profundidade)
+# que também serve para responder 400 com uma mensagem clara.
+_RE_SQL = re.compile(
+    r"(--|;|/\*|\*/|\bor\b\s+\d+\s*=\s*\d+|\b(select|insert|update|delete|drop|alter|"
+    r"truncate|union|exec|execute|create|grant|revoke|xp_\w+|sleep|pg_sleep|waitfor)\b)",
+    re.IGNORECASE,
+)
+
 
 def normalizar(texto: str) -> str:
     """Remove acentos, colapsa espaços e põe em maiúsculas (formato da base)."""
@@ -41,6 +57,14 @@ def _texto(valor: str, campo: str, permitir_curinga: bool = False) -> str:
         raise ErroAPI(400, f"Parâmetro '{campo}' não pode ser vazio.")
     if len(valor) > max_len:
         raise ErroAPI(400, f"Parâmetro '{campo}' excede {max_len} caracteres.")
+    if _RE_SQL.search(valor):
+        raise ErroAPI(
+            400,
+            f"Parâmetro '{campo}' contém conteúdo não permitido (possível tentativa de SQL injection).",
+        )
+    padrao = _RE_SIMILAR if permitir_curinga else _RE_TEXTO
+    if not padrao.match(valor):
+        raise ErroAPI(400, f"Parâmetro '{campo}' contém caracteres inválidos.", {"valor": valor})
     return normalizar(valor)
 
 
@@ -68,6 +92,11 @@ def validar_busca(args) -> dict:
             "Parâmetro(s) de busca inválido(s): " + ", ".join(desconhecidos),
             {"permitidos": sorted(PARAMETROS_PERMITIDOS)},
         )
+    # Parâmetro repetido (?uf=RS&uf=SC) é ambíguo
+    for chave in args.keys():
+        if len(args.getlist(chave)) > 1:
+            raise ErroAPI(400, f"Parâmetro '{chave}' informado mais de uma vez.")
+
     p: dict = {}
 
     if args.get("nome") is not None:
@@ -80,6 +109,9 @@ def validar_busca(args) -> dict:
         if "%" not in s:
             s = f"%{s}%"  # sem curinga explícito, procura em qualquer posição
         p["similar"] = s
+
+    if "nome" in p and "similar" in p:
+        raise ErroAPI(400, "Use 'nome' (busca exata) ou 'similar' (busca por similaridade), não ambos.")
 
     if args.get("cargo") is not None:
         p["cargo"] = _texto(args.get("cargo"), "cargo")
@@ -115,3 +147,8 @@ def validar_busca(args) -> dict:
 def validar_texto_simples(valor: str, campo: str) -> str:
     """Para ?q= em /api/cargos e /api/orgaos."""
     return _texto(valor, campo)
+
+
+def validar_inteiro(valor: str | None, campo: str, minimo: int, maximo: int, padrao: int) -> int:
+    """Para ?limit= em /api/cargos e /api/orgaos."""
+    return _inteiro(valor, campo, minimo, maximo, padrao)

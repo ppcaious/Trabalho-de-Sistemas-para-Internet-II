@@ -34,12 +34,26 @@ services:
   backend:
     build: ./backend
     container_name: servidores-backend
+    # Os valores ${VAR:-padrão} podem ser sobrescritos por variável de ambiente
+    # ou por um arquivo .env nesta pasta (ex.: RATE_LIMIT=60/minute).
     environment:
       DATABASE_URL: postgresql://app:app@db:5432/servidores
-      WEB_CONCURRENCY: "4"
-      GUNICORN_THREADS: "8"
+      STATEMENT_TIMEOUT_MS: "${STATEMENT_TIMEOUT_MS:-5000}"
+      # Cada worker do Gunicorn tem o seu pool: WEB_CONCURRENCY x POOL_MAX deve
+      # ficar abaixo do max_connections do Postgres (100, em db/Dockerfile).
+      POOL_MIN: "${POOL_MIN:-4}"
+      POOL_MAX: "${POOL_MAX:-16}"
+      POOL_TIMEOUT_S: "${POOL_TIMEOUT_S:-5}"
+      RATE_LIMIT: "${RATE_LIMIT:-300/minute}"
+      MAX_LIMIT: "100"
+      MAX_PER_PAGE: "100"
+      WEB_CONCURRENCY: "${WEB_CONCURRENCY:-4}"
+      GUNICORN_THREADS: "${GUNICORN_THREADS:-8}"
     ports:
-      - "8000:8000"
+      # Publicada só no loopback: de outras máquinas a API é acessada pelo
+      # Nginx (8080), que informa o IP real para o rate limit. Para expor a
+      # API na rede (ex.: app desktop em outro PC): API_BIND=0.0.0.0
+      - "${API_BIND:-127.0.0.1}:8000:8000"
     depends_on:
       db:
         condition: service_healthy

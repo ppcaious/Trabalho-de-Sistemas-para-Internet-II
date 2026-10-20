@@ -1,14 +1,18 @@
 """Acesso ao PostgreSQL com pool de conexões (psycopg 3).
 
-Todas as consultas usam parâmetros (%(nome)s), nunca concatenação de
-strings: é isso que impede SQL injection.
+- Todas as consultas usam parâmetros (%(nome)s), nunca concatenação de
+  strings: é isso que impede SQL injection.
+- Cada conexão é aberta com statement_timeout, então uma consulta lenta é
+  cancelada pelo próprio banco e vira um erro tratado (504).
+- O pool tem tamanho máximo; se estiver esgotado por mais de POOL_TIMEOUT_S
+  segundos a requisição recebe 503 em vez de enfileirar sem fim.
 """
 import threading
 from contextlib import contextmanager
 
 from flask import current_app
 from psycopg.rows import dict_row
-from psycopg_pool import ConnectionPool
+from psycopg_pool import ConnectionPool, PoolTimeout
 
 _pool: ConnectionPool | None = None
 _pool_aberto = False
@@ -22,8 +26,10 @@ def init_app(app):
         conninfo=cfg["DATABASE_URL"],
         min_size=cfg["POOL_MIN"],
         max_size=cfg["POOL_MAX"],
+        timeout=cfg["POOL_TIMEOUT_S"],
         kwargs={
             "row_factory": dict_row,
+            "options": f"-c statement_timeout={cfg['STATEMENT_TIMEOUT_MS']}",
             "application_name": "api-servidores",
         },
         open=False,
@@ -42,12 +48,19 @@ def _abrir_pool():
             _pool_aberto = True
 
 
+class BancoOcupado(Exception):
+    """Pool de conexões esgotado (excesso de buscas simultâneas)."""
+
+
 @contextmanager
 def conexao():
     """Entrega uma conexão do pool e devolve ao final (commit/rollback automático)."""
     _abrir_pool()
-    with _pool.connection() as conn:
-        yield conn
+    try:
+        with _pool.connection() as conn:
+            yield conn
+    except PoolTimeout as exc:
+        raise BancoOcupado() from exc
 
 
 def consultar(sql: str, params: dict | None = None) -> list[dict]:
@@ -64,11 +77,16 @@ def consultar_um(sql: str, params: dict | None = None) -> dict | None:
 
 
 def verificar() -> dict:
-    """Usado pelo /api/health: confirma que o banco responde e quantos registros tem."""
+    """Usado pelo /api/health: confirma que o banco responde e quantos registros tem.
+
+    Uma única passagem pela tabela (count com FILTER) em vez de três subconsultas.
+    """
     linha = consultar_um(
-        "SELECT (SELECT count(*) FROM servidores) AS total, "
-        "       (SELECT count(*) FROM servidores WHERE situacao = 'ATIVO') AS ativos, "
-        "       (SELECT count(*) FROM servidores WHERE situacao = 'APOSENTADO') AS aposentados"
+        "SELECT count(*) AS total, "
+        "       count(*) FILTER (WHERE situacao = 'ATIVO') AS ativos, "
+        "       count(*) FILTER (WHERE situacao = 'APOSENTADO') AS aposentados, "
+        "       current_setting('statement_timeout') AS statement_timeout "
+        "FROM servidores"
     )
     return linha or {}
 

@@ -1,9 +1,21 @@
-"""Tratamento centralizado de erros: toda resposta de erro é JSON com código HTTP adequado."""
+"""Tratamento centralizado de erros: toda resposta de erro é JSON com código HTTP adequado.
+
+Códigos usados:
+  400 - parâmetro inválido (string inválida, UF inválida, possível SQL injection...)
+  404 - nada encontrado (nome, cargo, órgão, página inexistente, rota inexistente)
+  405 - método não permitido
+  429 - excesso de requisições do mesmo cliente (rate limit)
+  503 - banco indisponível ou pool de conexões esgotado (excesso de buscas simultâneas)
+  504 - consulta excedeu o tempo limite (statement_timeout)
+  500 - erro inesperado
+"""
 import logging
 
 import psycopg
 from flask import jsonify, request
 from werkzeug.exceptions import HTTPException
+
+from .db import BancoOcupado
 
 log = logging.getLogger(__name__)
 
@@ -37,6 +49,21 @@ def registrar_handlers(app):
     @app.errorhandler(405)
     def _metodo(e):
         return resposta_erro(405, "Método não permitido")
+
+    @app.errorhandler(BancoOcupado)
+    def _ocupado(e):
+        return resposta_erro(
+            503,
+            "Servidor ocupado: muitas buscas simultâneas. Tente novamente em alguns segundos.",
+        )
+
+    @app.errorhandler(psycopg.errors.QueryCanceled)
+    def _timeout(e):
+        return resposta_erro(
+            504,
+            "A busca excedeu o tempo limite. Refine os filtros e tente novamente.",
+            {"timeout_ms": app.config["STATEMENT_TIMEOUT_MS"]},
+        )
 
     @app.errorhandler(psycopg.OperationalError)
     def _banco_indisponivel(e):
